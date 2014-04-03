@@ -1,22 +1,29 @@
+#!/usr/bin/env ruby
+
 require 'dagger'
 
 method = ARGV[0] or abort "Usage: dagger [method] [url] [data]"
 
 if ARGV[1].nil?
   method = 'get'
-  url = method
+else
+  method = ARGV.shift
 end
 
 def parse_data(str)
   {} # not ready yet.
 end
 
+url  = ARGV[0]
+data = parse_data(ARGV[1])
+
 options = {
   :follow => true
 }
 
-resp = Dagger.send(method, url, parse_data, options)
+# puts "#{method} #{url}"
+resp = Dagger.send(method, url, data, options)
 
-puts resp.status
+# puts resp.status
 # puts resp.headers
-puts resp.data
+puts resp.body

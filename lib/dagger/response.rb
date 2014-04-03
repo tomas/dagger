@@ -36,7 +36,7 @@ module Dagger
     end
     
     def data
-      Parsers.new(self).process
+      @data ||= Parsers.new(self).process || body 
     end
 
   end
