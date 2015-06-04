@@ -11,7 +11,7 @@ else
 end
 
 def parse_data(str)
-  {} # not ready yet.
+  {} # not ready yet. TODO!
 end
 
 url  = ARGV[0]
