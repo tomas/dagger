@@ -1,13 +1,12 @@
 #!/usr/bin/env ruby
-
 require 'dagger'
 
 method = ARGV[0] or abort "Usage: dagger [method] [url] [data]"
 
-if ARGV[1].nil?
-  method = 'get'
+method = if ARGV[1].nil?
+  'get'
 else
-  method = ARGV.shift
+  ARGV.shift
 end
 
 def parse_data(str)
@@ -24,6 +23,9 @@ options = {
 # puts "#{method} #{url}"
 resp = Dagger.send(method, url, data, options)
 
-# puts resp.status
-# puts resp.headers
-puts resp.body
+if ARGV.include?('-I')
+  puts resp.status
+  puts resp.headers
+else
+  puts resp.body
+end
