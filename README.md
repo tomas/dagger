@@ -16,13 +16,18 @@ In your Gemfile:
 require 'dagger'
 resp = Dagger.get('http://google.com')
 
-puts resp.body # => "<!doctype html...>
+puts resp.body # => "<!doctype html...>"
 ```
 
 ## `post(url, data)`
 
 ```rb
 resp = Dagger.post('http://api.server.com', { foo: 'bar' })
+puts resp.status # => 200
+
+# if the endpoints returned a pareable content type (eg. 'application/json')
+# then `resp.data` will return the parsed object. `body` still contains the raw data.
+puts resp.data # => { result: 'GREAT SUCCESS!' }
 ```
 
 Same syntax applies for `put`, `patch` and `delete` requests. You can also pass options as the third param:
