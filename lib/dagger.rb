@@ -14,16 +14,14 @@ module Dagger
   }
 
   def self.get(uri, query = nil, opts = {})
-    raise ArgumentError.new("Empty URL!") if (uri || '').strip == ''
-
     opts[:follow] = 10 if opts[:follow] == true
-    uri = parse_uri(uri)
+
+    uri       = parse_uri(uri)
     uri.query = encode(opts[:query]) if opts[:query]
+    http      = client(uri, opts)
+    request   = Net::HTTP::Get.new(uri.request_uri, DEFAULT_HEADERS.merge(opts[:headers] || {}))
 
-    http = client(uri, opts)
-    request = Net::HTTP::Get.new(uri.request_uri, DEFAULT_HEADERS.merge(opts[:headers] || {}))
-
-    if opts[:username] && opts[:password]
+    if opts[:username] # && opts[:password]
       request.basic_auth(opts.delete(:username), opts.delete(:password))
     end
 
@@ -57,14 +55,21 @@ module Dagger
   private
 
   def self.request(method, uri, params, opts = {})
-    # raise "Params should be a hash." unless params.is_a?(Hash)
-    uri = parse_uri(uri)
-    query = params.is_a?(String) ? params : encode(params)
-
+    uri     = parse_uri(uri)
     headers = opts[:headers] || {}
 
-    if opts[:username] && opts[:password]
-      headers['Authorization'] = "Basic " + Base64.encode64("#{opts[:username]}:#{opts[:password]}")
+    query = if params.is_a?(String)
+      params
+    elsif opts[:json]
+      Oj.dump(params) # convert to JSON
+      headers['Content-Type'] = 'application/json'
+    else
+      encode(params)
+    end
+
+    if opts[:username] # opts[:password] is optional
+      str = [opts[:username], opts[:password]].compact.join(':')
+      headers['Authorization'] = "Basic " + Base64.encode64(str)
     end
 
     args = [method, uri.path, query, headers]
