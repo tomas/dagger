@@ -24,7 +24,7 @@ puts resp.body # => "<!doctype html...>"
 Dagger.get('google.com/search', { q: 'dagger' }) # => requests '/search?q=dagger'
 ```
 
-## `post(url, [params], [options])`
+## `post(url, params, [options])`
 
 ```rb
 resp = Dagger.post('http://api.server.com', { foo: 'bar' })
