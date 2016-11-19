@@ -1,18 +1,4 @@
 # Dagger.
-# Simple Net::HTTP wrapper (in less than 100 LOC)
-# Written by Tomas Pollak
-
-# Example Usage ---------------------------------
-#
-# resp, body = Dagger.get('http://google.com')
-# puts body if resp.code == 200
-#
-# opts = { username: 'foobar', password: 'secret' }
-# resp, body = Dagger.get('http://api.server.com', opts)
-#
-# opts = { verify_ssl: false, open_timeout: 30 }
-# resp, body = Dagger.post('http://twitter.com', { foo: 'bar' }, opts)
-
 require 'dagger/version'
 require 'dagger/response'
 require 'dagger/parsers'
@@ -99,7 +85,7 @@ module Dagger
     http.open_timeout = opts[:open_timeout] if opts[:open_timeout]
     http.read_timeout = opts[:read_timeout] if opts[:read_timeout]
     http.use_ssl = true if uri.port == 443
-    http.verify_mode = opts[:verify_ssl] ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
+    http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
     http
   end
 
