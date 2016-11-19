@@ -21,11 +21,12 @@ require 'net/https'
 require 'base64'
 
 module Dagger
-  
+
   DEFAULT_HEADERS = {
-    'User-Agent' => "Dagger/#{VERSION} (Ruby Net::HTTP Wrapper, like curl)" 
+    'Accept' => '*/*',
+    'User-Agent' => "Dagger/#{VERSION} (Ruby Net::HTTP Wrapper, like curl)"
   }
-  
+
   def self.get(uri, query = nil, opts = {})
     raise ArgumentError.new("Empty URL!") if (uri || '').strip == ''
 
@@ -46,8 +47,8 @@ module Dagger
       opts[:follow] -= 1
       return get(resp['Location'], nil, opts)
     end
-      
-    build_response(resp, data || resp.body) # 1.8 vs 1.9 style responses 
+
+    build_response(resp, data || resp.body) # 1.8 vs 1.9 style responses
   end
 
   def self.post(uri, params = {}, options = {})
@@ -86,7 +87,7 @@ module Dagger
     resp, data = client(uri, opts).send(*args)
     build_response(resp, data || resp.body) # 1.8 vs 1.9 style responses
   end
-  
+
   def self.build_response(resp, body)
     resp.extend(Response)
     resp.set_body(body) unless resp.body
@@ -101,10 +102,11 @@ module Dagger
     http.verify_mode = opts[:verify_ssl] ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
     http
   end
-  
+
   def self.parse_uri(uri)
     uri = 'http://' + uri unless uri.to_s['http']
     uri = URI.parse(uri)
+    raise ArgumentError.new("Invalid URI: #{uri}") unless uri.is_a?(URI::HTTP)
     uri.path = '/' if uri.path == ''
     uri
   end
