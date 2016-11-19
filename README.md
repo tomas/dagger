@@ -12,7 +12,7 @@ In your Gemfile:
 
 # Usage
 
-## `get(url, [query], [options])`
+## `get(url, [params], [options])`
 
 ```rb
 require 'dagger'
@@ -24,21 +24,30 @@ puts resp.body # => "<!doctype html...>"
 Dagger.get('google.com/search', { q: 'dagger' }) # => requests '/search?q=dagger'
 ```
 
-## `post(url, [data])`
+## `post(url, [params], [options])`
 
 ```rb
 resp = Dagger.post('http://api.server.com', { foo: 'bar' })
 puts resp.status # => 200
 
-# if the endpoint returned a parseable content-type (e.g. 'application/json')
+# if you want to send JSON to the server, you can pass the { json: true } option,
+# which converts your params object to JSON, and also sets Content-Type to 'application/json'
+resp = Dagger.put('http://server.com', { foo: 'bar' }, { json: true })
+
+# now, if the endpoint returned a parseable content-type (e.g. 'application/json')
 # then `resp.data` will return the parsed result. `body` contains the raw data.
 puts resp.data # => { result: 'GREAT SUCCESS!' }
 ```
 
-Same syntax applies for `put`, `patch` and `delete` requests. You can also pass options as the third param:
+Same syntax applies for `put`, `patch` and `delete` requests. 
+
+# Options
+
+These are all the available options.
 
 ```rb
 opts = {
+  json: true, # converts params object to JSON and sets Content-Type header. (POST/PUT/PATCH only)
   follow: true, # follow redirects (10 by default)
   headers: { 'Accept': 'text/xml' },
   username: 'dagger', # for HTTP auth
