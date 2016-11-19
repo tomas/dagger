@@ -25,8 +25,8 @@ puts resp.body # => "<!doctype html...>"
 resp = Dagger.post('http://api.server.com', { foo: 'bar' })
 puts resp.status # => 200
 
-# if the endpoints returned a pareable content type (eg. 'application/json')
-# then `resp.data` will return the parsed object. `body` still contains the raw data.
+# if the endpoint returned a parseable content-type (e.g. 'application/json')
+# then `resp.data` will return the parsed result. `body` contains the raw data.
 puts resp.data # => { result: 'GREAT SUCCESS!' }
 ```
 
