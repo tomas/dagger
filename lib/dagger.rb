@@ -8,6 +8,7 @@ require 'base64'
 
 module Dagger
 
+  REDIRECT_CODES  = [301, 302, 303].freeze
   DEFAULT_HEADERS = {
     'Accept' => '*/*',
     'User-Agent' => "Dagger/#{VERSION} (Ruby Net::HTTP Wrapper, like curl)"
@@ -27,7 +28,7 @@ module Dagger
 
     resp, data = http.request(request)
 
-    if [301,302].include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
+    if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow].to_i > 0)
       opts[:follow] -= 1
       return get(resp['Location'], nil, opts)
     end
