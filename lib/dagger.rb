@@ -28,7 +28,7 @@ module Dagger
 
     resp, data = http.request(request)
 
-    if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow].to_i > 0)
+    if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
       opts[:follow] -= 1
       return get(resp['Location'], nil, opts)
     end
