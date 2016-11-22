@@ -49,7 +49,7 @@ module Dagger
   end
 
   def self.request(method, url, params = {}, options = {})
-    return get(url, options) if method.to_s.downcase == 'get'
+    return get(url, params, options) if method.to_s.downcase == 'get'
     request(method.to_s.downcase, url, params, options)
   end
 
