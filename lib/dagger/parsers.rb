@@ -5,7 +5,7 @@ class Parsers
 
   def initialize(response)
     @body = response.body
-    @normalized = response.content_type.to_s.sub('/', '_')
+    @normalized = response.content_type.to_s.sub('/', '_').split(';').first
   end
 
   def process
