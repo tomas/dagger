@@ -37,25 +37,25 @@ module Dagger
   end
 
   def self.post(uri, params = {}, options = {})
-    request('post', uri, params, options)
+    send_request('post', uri, params, options)
   end
 
   def self.put(uri, params = {}, options = {})
-    request('put', uri, params, options)
+    send_request('put', uri, params, options)
   end
 
   def self.delete(uri, params = {}, options = {})
-    request('delete', uri, params, options)
+    send_request('delete', uri, params, options)
   end
 
   def self.request(method, url, params = {}, options = {})
     return get(url, params, options) if method.to_s.downcase == 'get'
-    request(method.to_s.downcase, url, params, options)
+    send_request(method.to_s.downcase, url, params, options)
   end
 
   private
 
-  def self.request(method, uri, params, opts = {})
+  def self.send_request(method, uri, params, opts = {})
     uri     = parse_uri(uri)
     headers = opts[:headers] || {}
 
