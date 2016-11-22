@@ -18,7 +18,7 @@ module Dagger
     opts[:follow] = 10 if opts[:follow] == true
 
     uri       = parse_uri(uri)
-    uri.query = encode(opts[:query]) if opts[:query]
+    uri.query = encode(query) if query
     http      = client(uri, opts)
     request   = Net::HTTP::Get.new(uri.request_uri, DEFAULT_HEADERS.merge(opts[:headers] || {}))
 
