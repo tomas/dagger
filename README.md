@@ -41,6 +41,13 @@ puts resp.data # => { result: 'GREAT SUCCESS!' }
 
 Same syntax applies for `put`, `patch` and `delete` requests. 
 
+## `request(method, url, [params], [options])`
+
+```rb
+resp = Dagger.request(:put, 'https://api.server.com', { foo: 'bar' }, { follow: 10 })
+puts resp.headers # { 'Content-Type' => 'application/json', ... } 
+```
+
 # Options
 
 These are all the available options.
