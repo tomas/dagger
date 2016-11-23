@@ -27,6 +27,14 @@ module Dagger
 
     alias_method :status, :code
 
+    def success?
+      [200, 201].include?(code)
+    end
+
+    def redirect?
+      [301, 302, 303, 307].include?(code)
+    end
+
     def to_s
       body.to_s
     end
