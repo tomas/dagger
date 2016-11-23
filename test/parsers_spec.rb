@@ -67,6 +67,7 @@ describe 'Parsers' do
   end
 
   describe 'XML' do
+
     before do
       allow(fake_resp).to receive(:content_type).and_return('text/xml')
     end
@@ -102,6 +103,29 @@ describe 'Parsers' do
         expect(res.foo).to be_a(Ox::Element)
         expect(res.foo.text).to eql('123')
       end
+    end
+
+
+    describe 'XMLNode extension' do
+
+      xml = %(
+        <xml>
+          <foo attr="bar">test</foo>
+          <nested>
+            <item>
+              <title attr="downcased">foobar</title>
+            </item>
+          </nested>
+        </xml>
+      )
+
+      it 'works' do
+        doc = Ox.parse(xml)
+        obj = doc.to_hash
+
+        expect(obj[:nested][:item][:title].text).to eql('foobar')
+      end
+
     end
 
   end

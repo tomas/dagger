@@ -1,5 +1,6 @@
 require 'oj'
 require 'ox'
+require 'dagger/ox_extension'
 
 class Parsers
 
