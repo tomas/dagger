@@ -88,10 +88,16 @@ module Dagger
 
   def self.client(uri, opts = {})
     http = Net::HTTP.new(uri.host, uri.port)
-    http.open_timeout = opts[:open_timeout] if opts[:open_timeout]
-    http.read_timeout = opts[:read_timeout] if opts[:read_timeout]
-    http.use_ssl = true if uri.port == 443
-    http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
+
+    if uri.port == 443
+      http.use_ssl = true
+      http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
+    end
+
+    [:open_timeout, :read_timeout, :ssl_version, :ciphers].each do |key|
+      http.send("#{key}=", opts[key]) if opts.has_key?(key)
+    end
+
     http
   end
 
