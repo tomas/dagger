@@ -13,7 +13,11 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
     if found = self[key]
       found.is_a?(XMLNode) ? found : found.first
     else
-      children.detect { |ch| ch.first(key) }
+      children.find do |ch|
+        if res = ch.first(key)
+          return res
+        end
+      end
     end
   end
 
