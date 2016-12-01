@@ -4,7 +4,25 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
   # this lets us traverse an parsed object like this:
   # doc[:child][:grandchild].value
   def [](key)
-    children.select { |node| node.name.to_s == key.to_s }.first
+    found = children.select { |node| node.name.to_s == key.to_s }
+    found.empty? ? nil : found.size == 1 ? found.first : found
+  end
+
+  # returns first matching node
+  def first(key)
+    if found = self[key]
+      found.is_a?(XMLNode) ? found : found.first
+    else
+      children.detect { |ch| ch.first(key) }
+    end
+  end
+
+  # returns all matching nodes
+  def all(key)
+    found    = self[key]
+    direct   = found.is_a?(XMLNode) ? [found] : found || []
+    indirect = children.map { |ch| ch.find(key) }.flatten.compact
+    direct + indirect
   end
 end
 
