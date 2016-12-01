@@ -25,7 +25,7 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
   def all(key)
     found    = self[key]
     direct   = found.is_a?(XMLNode) ? [found] : found || []
-    indirect = children.map { |ch| ch.find(key) }.flatten.compact
+    indirect = children.map { |ch| ch.all(key) }.flatten.compact
     direct + indirect
   end
 end
