@@ -1,6 +1,8 @@
 require 'ox'
 
 XMLNode = Struct.new(:name, :text, :attributes, :children) do
+  # this lets us traverse an parsed object like this:
+  # doc[:child][:grandchild].value
   def [](key)
     children.select { |node| node.name.to_s == key.to_s }.first
   end
