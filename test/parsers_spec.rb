@@ -6,7 +6,7 @@ require 'rspec/expectations'
 describe 'Parsers' do
 
   def send_request
-    Dagger.get('http://foobar.com/test')
+    Dagger.post('http://foobar.com/test', { foo: 'bar'})
   end
 
   let(:fake_http) { double('Net::HTTP') }
@@ -15,7 +15,7 @@ describe 'Parsers' do
   before do
     allow(Net::HTTP).to receive(:new).and_return(fake_http)
     allow(fake_http).to receive(:verify_mode=).and_return(true)
-    allow(fake_http).to receive(:request).and_return(fake_resp)
+    allow(fake_http).to receive(:post).and_return(fake_resp)
   end
 
   describe 'json' do
