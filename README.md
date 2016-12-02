@@ -35,7 +35,7 @@ puts resp.code # => 200
 resp = Dagger.put('http://server.com', { foo: 'bar' }, { json: true })
 
 # now, if the endpoint returned a parseable content-type (e.g. 'application/json')
-# then `resp.data` will return the parsed result. `body` contains the raw data.
+# then `resp.data` will return the parsed result. `body` contains the raw bytes.
 puts resp.data # => { result: 'GREAT SUCCESS!' }
 ```
 
