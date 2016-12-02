@@ -28,7 +28,7 @@ Dagger.get('google.com/search', { query: { q: 'dagger' } }) # => requests '/sear
 
 ```rb
 resp = Dagger.post('http://api.server.com', { foo: 'bar' })
-puts resp.status # => 200
+puts resp.code # => 200
 
 # if you want to send JSON to the server, you can pass the { json: true } option,
 # which converts your params object to JSON, and also sets Content-Type to 'application/json'
