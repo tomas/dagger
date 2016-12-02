@@ -12,7 +12,7 @@ In your Gemfile:
 
 # Usage
 
-## `get(url, [params], [options])`
+## `get(url, [options])`
 
 ```rb
 require 'dagger'
@@ -20,8 +20,8 @@ resp = Dagger.get('http://google.com')
 
 puts resp.body # => "<!doctype html...>"
 
-# if query is passed, it is appended as a query string
-Dagger.get('google.com/search', { q: 'dagger' }) # => requests '/search?q=dagger'
+# you can also pass a query via the options hash, in which case is appended as a query string.
+Dagger.get('google.com/search', { query: { q: 'dagger' } }) # => requests '/search?q=dagger'
 ```
 
 ## `post(url, params, [options])`
@@ -46,6 +46,22 @@ Same syntax applies for `put`, `patch` and `delete` requests.
 ```rb
 resp = Dagger.request(:put, 'https://api.server.com', { foo: 'bar' }, { follow: 10 })
 puts resp.headers # { 'Content-Type' => 'application/json', ... } 
+```
+In this case, if you want to include a query in your get request, simply pass it as 
+the `params` argument.
+
+## `open(url, [options]) # => &block`
+
+Oh yes. Dagger can open and hold a persistent connection so you can perform various 
+requests without the overhead of establishing new TCP sessions.
+
+```rb
+Dagger.open('https://api.server.com', { verify_ssl: 'false' }) do
+   if post('/login', { email: 'foo@bar.com', pass: 'secret' }).success?
+     resp = get('/something', { query: { items: 20 }, follow: 5 }) # follow 5 redirects max.
+     File.open('something', 'wb') { |f| f.write(resp.body) }
+   end
+end
 ```
 
 # Options
