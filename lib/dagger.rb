@@ -24,13 +24,17 @@ module Dagger
       uri
     end
 
-    def self.encode(value, key = nil)
-      case value
-      when Hash  then value.map { |k,v| encode(v, append_key(key,k)) }.join('&')
-      when Array then value.map { |v| encode(v, "#{key}[]") }.join('&')
+    def self.encode(obj, key = nil)
+      if key.nil? && obj.is_a?(String) # && obj['=']
+        return obj
+      end
+
+      case obj
+      when Hash  then obj.map { |k, v| encode(v, append_key(key,k)) }.join('&')
+      when Array then obj.map { |v| encode(v, "#{key}[]") }.join('&')
       when nil   then ''
       else
-        "#{key}=#{URI.escape(value.to_s)}"
+        "#{key}=#{URI.escape(obj.to_s)}"
       end
     end
 
@@ -65,7 +69,7 @@ module Dagger
     def get(uri, opts = {})
       opts[:follow] = 10 if opts[:follow] == true
 
-      path = uri[0] == '/' ? uri : Utils.parse_uri(uri)
+      path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
       path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query]
 
       request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(opts[:headers] || {}))
