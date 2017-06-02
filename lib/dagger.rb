@@ -17,6 +17,7 @@ module Dagger
   module Utils
 
     def self.parse_uri(uri)
+      raise ArgumentError.new("Empty URI") if uri.to_s.strip == ''
       uri = 'http://' + uri unless uri.to_s['http']
       uri = URI.parse(uri)
       raise ArgumentError.new("Invalid URI: #{uri}") unless uri.is_a?(URI::HTTP)
@@ -75,14 +76,32 @@ module Dagger
       request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(opts[:headers] || {}))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
 
-      @resp, @data = @http.request(request)
+      @http.start unless @http.started?
+      resp, data = @http.request(request)
 
-      if REDIRECT_CODES.include?(@resp.code.to_i) && @resp['Location'] && (opts[:follow] && opts[:follow] > 0)
+      if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
         opts[:follow] -= 1
-        return get(@resp['Location'], nil, opts)
+        puts "Following redirect to #{resp['Location']}"
+        return get(resp['Location'], nil, opts)
       end
 
-      response
+      @response = build_response(resp, data || resp.body)
+    end
+
+    def post(uri, data, options = {})
+      request(:post, uri, data, options)
+    end
+
+    def put(uri, data, options = {})
+      request(:put, uri, data, options)
+    end
+
+    def patch(uri, data, options = {})
+      request(:patch, uri, data, options)
+    end
+
+    def delete(uri, data, options = {})
+      request(:delete, uri, data, options)
     end
 
     def request(method, uri, data, opts = {})
@@ -108,13 +127,23 @@ module Dagger
       args = [method.to_s.downcase, uri.path, query, headers]
       args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
-      @resp, @data = @http.send(*args)
-      response
+      @http.start unless @http.started?
+      resp, data = @http.send(*args)
+      @response = build_response(resp, data || resp.body)
     end
 
     def response
-      raise 'No response yet!' unless @resp
-      @response ||= build_response(@resp, @data || @resp.body) # 1.8 vs 1.9 style responses
+      @response or raise 'Request not sent!'
+    end
+
+    def open(&block)
+      @http.start do
+        instance_eval(&block)
+      end
+    end
+
+    def close
+      @http.finish
     end
 
     private
@@ -130,15 +159,9 @@ module Dagger
   class << self
 
     def open(uri, opts = {}, &block)
-      uri = Utils.parse_uri(uri)
-      opts.merge!(use_ssl: uri.scheme == 'https')
-      opts.merge!(verify_mode: OpenSSL::SSL::VERIFY_NONE) if opts[:verify_ssl] === false
-
-      Net::HTTP.start(uri.host, uri.port, opts) do |http|
-        client = Client.new(http)
-        # yield(client)
-        client.instance_eval(&block)
-      end
+      client = Client.init(uri, opts)
+      client.start(&block) if block_given?
+      client
     end
 
     def get(uri, options = {})

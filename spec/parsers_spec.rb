@@ -9,7 +9,7 @@ describe 'Parsers' do
     Dagger.post('http://foobar.com/test', { foo: 'bar'})
   end
 
-  let(:fake_http) { double('Net::HTTP') }
+  let(:fake_http) { double('Net::HTTP', started?: true) }
   let(:fake_resp) { double('Net::HTTPResponse', code: 200) }
 
   before do

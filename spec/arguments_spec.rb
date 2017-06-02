@@ -14,7 +14,8 @@ describe 'arguments' do
     describe 'empty url' do
 
       it 'raises error' do
-        expect { send_request('') }.to raise_error(URI::InvalidURIError)
+        # expect { send_request('') }.to raise_error(URI::InvalidURIError)
+        expect { send_request('') }.to raise_error(ArgumentError)
       end
 
     end
