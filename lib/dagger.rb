@@ -1,4 +1,3 @@
-# Dagger.
 require 'dagger/version'
 require 'dagger/response'
 require 'dagger/parsers'
