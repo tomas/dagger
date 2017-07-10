@@ -159,7 +159,7 @@ module Dagger
 
     def open(uri, opts = {}, &block)
       client = Client.init(uri, opts)
-      client.start(&block) if block_given?
+      client.open(&block) if block_given?
       client
     end
 

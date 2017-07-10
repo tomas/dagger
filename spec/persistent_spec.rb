@@ -8,8 +8,7 @@ describe 'Persistent mode' do
   it 'works' do
     fake_client = double('Client')
     expect(Dagger::Client).to receive(:new).once.and_return(fake_client)
-    # expect(fake_client).to receive(:get).twice #.and_return(fake_resp)
-    expect(fake_client).to receive(:start).once #.and_return(fake_resp)
+    expect(fake_client).to receive(:open).once #.and_return(fake_resp)
 
     obj = Dagger.open('https://www.google.com') do
       get('/search?q=dagger+http+client')
