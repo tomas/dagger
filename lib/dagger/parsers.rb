@@ -6,7 +6,7 @@ class Parsers
 
   def initialize(response)
     @body = response.body
-    @normalized = response.content_type.to_s.sub('/', '_').split(';').first
+    @normalized = response.content_type.to_s.split(';').first.gsub(/[^a-z]/, '_')
   end
 
   def process
@@ -20,6 +20,7 @@ class Parsers
   end
 
   alias_method :text_javascript, :application_json
+  alias_method :application_x_javascript, :application_json
 
   def text_xml(body)
     Ox.parse(body)
