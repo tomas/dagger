@@ -70,7 +70,7 @@ module Dagger
       opts[:follow] = 10 if opts[:follow] == true
 
       path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
-      path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query]
+      path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query] and opts[:query].any?
 
       request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(opts[:headers] || {}))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
@@ -104,7 +104,10 @@ module Dagger
     end
 
     def request(method, uri, data, opts = {})
-      return get(uri, opts.merge(query: data)) if method.to_s.downcase == 'get'
+      if method.to_s.downcase == 'get'
+        query = (opts[:query] || {}).merge(data || {})
+        return get(uri, opts.merge(query: query))
+      end
 
       uri     = Utils.parse_uri(uri)
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
