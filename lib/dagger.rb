@@ -145,7 +145,7 @@ module Dagger
     end
 
     def close
-      @http.finish
+      @http.finish if @http.started?
     end
 
     private
