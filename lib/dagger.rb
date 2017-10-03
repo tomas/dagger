@@ -81,7 +81,7 @@ module Dagger
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
         opts[:follow] -= 1
         puts "Following redirect to #{resp['Location']}"
-        return get(resp['Location'], nil, opts)
+        return get(resp['Location'], opts)
       end
 
       @response = build_response(resp, data || resp.body)
