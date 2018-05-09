@@ -116,7 +116,7 @@ module Dagger
         data
       elsif opts[:json]
         headers['Content-Type'] = 'application/json'
-        Oj.dump(data) # convert to JSON
+        Oj.dump(data, mode: :compat) # compat ensures symbols are converted to strings
       else # querystring, then
         Utils.encode(data)
       end
