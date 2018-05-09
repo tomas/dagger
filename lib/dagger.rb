@@ -115,8 +115,8 @@ module Dagger
       query = if data.is_a?(String)
         data
       elsif opts[:json]
-        Oj.dump(data) # convert to JSON
         headers['Content-Type'] = 'application/json'
+        Oj.dump(data) # convert to JSON
       else # querystring, then
         Utils.encode(data)
       end
