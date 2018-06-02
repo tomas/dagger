@@ -21,15 +21,17 @@ module Dagger
       super.to_i
     end
 
+    alias_method :status, :code
+
     def content_type
       self['Content-Type']
     end
 
-    alias_method :status, :code
-
     def success?
       [200, 201].include?(code)
     end
+
+    alias_method :ok?, :success?
 
     def redirect?
       [301, 302, 303, 307].include?(code)
