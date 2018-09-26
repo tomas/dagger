@@ -102,9 +102,13 @@ describe 'Parsers' do
         expect(res).to be_a(Ox::Element)
         expect(res.foo).to be_a(Ox::Element)
         expect(res.foo.text).to eql('123')
+
+        # test dig behaviour
+        expect(res.dig('xxx', 'test', '111')).to be(nil)
+        expect(res.dig('bar', 'test')).to be_a(XMLNode)
+        expect(res.dig('bar', 'test').to_s).to eql('456')
       end
     end
-
 
     describe 'XMLNode extension' do
 

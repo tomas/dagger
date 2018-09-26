@@ -8,6 +8,22 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
     found.empty? ? nil : found.size == 1 ? found.first : found
   end
 
+  def dig(*paths)
+    list = Array(paths).flatten
+    res = list.reduce([self]) do |parents, key|
+
+      if parents
+        found = parents.map do |parent|
+          parent.children.select { |node| node.name.to_s == key.to_s }
+        end.flatten
+
+        found.any? ? found : nil
+      end
+    end
+
+    res.nil? || res.empty? ? nil : res.size == 1 ? res.first : res
+  end
+
   # returns first matching node
   def first(key)
     if found = self[key]
