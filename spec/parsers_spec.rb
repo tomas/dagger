@@ -94,14 +94,15 @@ describe 'Parsers' do
 
     describe 'valid data' do
       before do
-        allow(fake_resp).to receive(:body).and_return('<xml><foo>123</foo></xml>')
+        allow(fake_resp).to receive(:body).and_return('<xml><foo>123</foo><bar><test>456</test></bar></xml>')
       end
 
-      it 'returns nil' do
+      it 'returns XMLNode obj' do
         res = send_request.data
-        expect(res).to be_a(Ox::Element)
-        expect(res.foo).to be_a(Ox::Element)
-        expect(res.foo.text).to eql('123')
+        expect(res).to be_a(XMLNode)
+        expect(res.to_hash).to eql(res)
+        expect(res['foo']).to be_a(XMLNode)
+        expect(res['foo'].text).to eql('123')
 
         # test dig behaviour
         expect(res.dig('xxx', 'test', '111')).to be(nil)

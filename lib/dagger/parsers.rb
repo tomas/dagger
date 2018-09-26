@@ -23,7 +23,9 @@ class Parsers
   alias_method :application_x_javascript, :application_json
 
   def text_xml(body)
-    Ox.parse(body)
+    if res = Ox.parse(body)
+      res.to_hash
+    end
   rescue Ox::ParseError
     nil
   end
