@@ -1,6 +1,9 @@
 require 'ox'
 
 XMLNode = Struct.new(:name, :text, :attributes, :children) do
+
+  alias_method :to_s, :text
+  alias_method :value, :text
   # this lets us traverse an parsed object like this:
   # doc[:child][:grandchild].value
   def [](key)
