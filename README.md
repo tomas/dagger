@@ -64,6 +64,17 @@ Dagger.open('https://api.server.com', { verify_ssl: 'false' }) do
 end
 ```
 
+Passing the block is optional, by the way. You can also open and call the request verb on the returned object:
+
+```rb
+  http = Dagger.open('https://api.server.com')
+  resp = http.get('/foo')
+  puts resp.code # => 200
+  resp = http.post('/bar', { some: 'thing' })
+  puts resp.data.inspect # => { status: "success" }
+  http.close # don't forget to!
+```
+
 # Options
 
 These are all the available options.
