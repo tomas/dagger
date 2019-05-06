@@ -72,7 +72,10 @@ module Dagger
       path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
       path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query] and opts[:query].any?
 
-      request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(opts[:headers] || {}))
+      headers = opts[:headers] || {}
+      headers['Accept'] = 'application/json' if opts[:json]
+
+      request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
 
       @http.start unless @http.started?
@@ -115,7 +118,7 @@ module Dagger
       query = if data.is_a?(String)
         data
       elsif opts[:json]
-        headers['Content-Type'] = 'application/json'
+        headers['Accept'] = headers['Content-Type'] = 'application/json'
         Oj.dump(data, mode: :compat) # compat ensures symbols are converted to strings
       else # querystring, then
         Utils.encode(data)
