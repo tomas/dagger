@@ -5,6 +5,10 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
   alias_method :to_s, :text
   alias_method :value, :text
 
+  def count
+    raise "Please call #children.count"
+  end
+
   def to_hash
     self # for backwards compat
   end
