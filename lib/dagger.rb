@@ -8,6 +8,7 @@ require 'base64'
 module Dagger
 
   REDIRECT_CODES  = [301, 302, 303].freeze
+  DEFAULT_RETRY_WAIT = 5.freeze # seconds
   DEFAULT_HEADERS = {
     'Accept'     => '*/*',
     'User-Agent' => "Dagger/#{VERSION} (Ruby Net::HTTP Wrapper, like curl)"
@@ -88,6 +89,17 @@ module Dagger
       end
 
       @response = build_response(resp, data || resp.body)
+
+    rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
+      SocketError, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
+
+      if retries = opts[:retries] and retries.to_i > 0
+        puts "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
+        get(uri, opts.merge(retries: retries - 1))
+      else
+        raise
+      end
     end
 
     def post(uri, data, options = {})
@@ -135,6 +147,17 @@ module Dagger
       @http.start unless @http.started?
       resp, data = @http.send(*args)
       @response = build_response(resp, data || resp.body)
+
+    rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
+      SocketError, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
+
+      if method.to_s.downcase != 'get' && retries = opts[:retries] and retries.to_i > 0
+        puts "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
+        request(method, uri, data, opts.merge(retries: retries - 1))
+      else
+        raise
+      end
     end
 
     def response
