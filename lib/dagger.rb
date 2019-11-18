@@ -2,16 +2,18 @@ require 'dagger/version'
 require 'dagger/response'
 require 'dagger/parsers'
 
+require 'net/http/persistent'
 require 'net/https'
 require 'base64'
 
 module Dagger
 
+  DAGGER_NAME     = "Dagger/#{VERSION}"
   REDIRECT_CODES  = [301, 302, 303].freeze
   DEFAULT_RETRY_WAIT = 5.freeze # seconds
   DEFAULT_HEADERS = {
     'Accept'     => '*/*',
-    'User-Agent' => "Dagger/#{VERSION} (Ruby Net::HTTP Wrapper, like curl)"
+    'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP Wrapper, like curl)"
   }
 
   module Utils
@@ -49,10 +51,14 @@ module Dagger
 
     def self.init(uri, opts)
       uri  = Utils.parse_uri(uri)
-      http = Net::HTTP.new(uri.host, uri.port)
+      http = if opts.delete(:persistent)
+        Net::HTTP::Persistent.new(name: DAGGER_NAME)
+      else
+        Net::HTTP.new(uri.host, uri.port)
+      end
 
       if uri.port == 443
-        http.use_ssl = true
+        http.use_ssl = true if http.is_a?(Net::HTTP) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
 
@@ -60,27 +66,35 @@ module Dagger
         http.send("#{key}=", opts[key]) if opts.has_key?(key)
       end
 
-      new(http)
+      new(http, [uri.scheme, uri.host].join('://'))
     end
 
-    def initialize(http)
-      @http = http
+    def initialize(http, host = nil)
+      @http, @host = http, host
     end
 
     def get(uri, opts = {})
       opts[:follow] = 10 if opts[:follow] == true
 
-      path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
-      path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query] and opts[:query].any?
+      uri = Utils.parse_uri(@host + uri)
+      # path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
+      uri.path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query] and opts[:query].any?
 
       headers = opts[:headers] || {}
       headers['Accept'] = 'application/json' if opts[:json]
 
-      request = Net::HTTP::Get.new(path, DEFAULT_HEADERS.merge(headers))
+      puts uri.path
+
+      request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
 
-      @http.start unless @http.started?
-      resp, data = @http.request(request)
+      if @http.is_a?(Net::HTTP)
+        @http.start if @http.is_a?(Net::HTTP) and !@http.started?
+        resp, data = @http.request(request)
+      else
+        # puts uri.inspect
+        resp, data = @http.request(uri, request)
+      end
 
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
         opts[:follow] -= 1
@@ -124,7 +138,7 @@ module Dagger
         return get(uri, opts.merge(query: query))
       end
 
-      uri     = Utils.parse_uri(uri)
+      uri     = Utils.parse_uri(@host + uri)
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
 
       query = if data.is_a?(String)
@@ -141,11 +155,19 @@ module Dagger
         headers['Authorization'] = "Basic " + Base64.encode64(str)
       end
 
-      args = [method.to_s.downcase, uri.path, query, headers]
-      args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
+      if @http.is_a?(Net::HTTP)
+        args = [method.to_s.downcase, uri.path, query, headers]
+        args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
-      @http.start unless @http.started?
-      resp, data = @http.send(*args)
+        @http.start unless @http.started?
+        resp, data = @http.send(*args)
+      else
+        req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.path, headers)
+        req.set_form_data(query)
+
+        resp, data = @http.request(uri, req)
+      end
+
       @response = build_response(resp, data || resp.body)
 
     rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
@@ -165,13 +187,21 @@ module Dagger
     end
 
     def open(&block)
-      @http.start do
+      if @http.is_a?(Net::HTTP::Persistent)
         instance_eval(&block)
+      else
+        @http.start do
+          instance_eval(&block)
+        end
       end
     end
 
     def close
-      @http.finish if @http.started?
+      if @http.is_a?(Net::HTTP::Persistent)
+        @http.shutdown # calls finish on pool connections
+      else
+        @http.finish if @http.started?
+      end
     end
 
     private
@@ -187,7 +217,7 @@ module Dagger
   class << self
 
     def open(uri, opts = {}, &block)
-      client = Client.init(uri, opts)
+      client = Client.init(uri, opts.merge(persistent: true))
       client.open(&block) if block_given?
       client
     end
