@@ -28,8 +28,8 @@ module Dagger
     end
 
     def self.resolve_uri(uri, host = nil, query = nil)
-      uri = host + uri if uri['//'].nil? && host
-      uri = parse_uri(uri)
+      uri = host + uri if uri.to_s['//'].nil? && host
+      uri = parse_uri(uri.to_s)
       uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
       uri
     end
@@ -90,7 +90,7 @@ module Dagger
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
 
-      if @http.respond_to?(:started?) # regular Net::HTTP 
+      if @http.respond_to?(:started?) # regular Net::HTTP
         @http.start unless @http.started?
         resp, data = @http.request(request)
       else # persistent
