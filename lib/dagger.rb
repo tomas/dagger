@@ -155,7 +155,7 @@ module Dagger
         headers['Authorization'] = "Basic " + Base64.encode64(str)
       end
 
-      if @http.is_a?(Net::HTTP)
+      if @http.respond_to?(:started?)
         args = [method.to_s.downcase, uri.path, query, headers]
         args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
