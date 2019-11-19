@@ -71,7 +71,7 @@ module Dagger
       end
 
       if uri.port == 443
-        http.use_ssl = true if http.respond_to?(:use_ssl) # persistent does it automatically
+        http.use_ssl = true if http.respond_to?(:use_ssl=) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
 
