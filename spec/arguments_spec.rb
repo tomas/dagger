@@ -23,7 +23,7 @@ describe 'arguments' do
     describe 'invalid URL' do
 
       it 'raises error' do
-        expect { send_request('asd123.rewqw') }.to raise_error(SocketError)
+        expect { send_request('asd123.rewqw') }.to raise_error(ArgumentError)
       end
 
     end

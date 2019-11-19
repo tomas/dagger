@@ -6,6 +6,12 @@ require 'net/http/persistent'
 require 'net/https'
 require 'base64'
 
+class URI::HTTP
+  def scheme_and_host
+    [scheme, host].join('://')
+  end
+end
+
 module Dagger
 
   DAGGER_NAME     = "Dagger/#{VERSION}"
@@ -73,7 +79,8 @@ module Dagger
         http.send("#{key}=", opts[key]) if opts.has_key?(key)
       end
 
-      new(http, [uri.scheme, uri.host].join('://'))
+      # new(http, [uri.scheme, uri.host].join('://'))
+      new(http, uri.scheme_and_host)
     end
 
     def initialize(http, host = nil)
@@ -82,6 +89,7 @@ module Dagger
 
     def get(uri, opts = {})
       uri = Utils.resolve_uri(uri, @host, opts[:query])
+      raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}") if @host != uri.scheme_and_host
 
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
@@ -140,6 +148,7 @@ module Dagger
       end
 
       uri = Utils.resolve_uri(uri, @host)
+      raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}") if @host != uri.scheme_and_host
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
 
       query = if data.is_a?(String)
@@ -219,7 +228,10 @@ module Dagger
 
     def open(uri, opts = {}, &block)
       client = Client.init(uri, opts.merge(persistent: true))
-      client.open(&block) if block_given?
+      if block_given?
+        client.open(&block)
+        client.close
+      end
       client
     end
 
