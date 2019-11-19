@@ -27,6 +27,13 @@ module Dagger
       uri
     end
 
+    def self.resolve_uri(uri, host = nil, query = nil)
+      uri = host + uri if uri['//'].nil? && host
+      uri = parse_uri(uri)
+      uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
+      uri
+    end
+
     def self.encode(obj, key = nil)
       if key.nil? && obj.is_a?(String) # && obj['=']
         return obj
@@ -58,7 +65,7 @@ module Dagger
       end
 
       if uri.port == 443
-        http.use_ssl = true if http.is_a?(Net::HTTP) # persistent does it automatically
+        http.use_ssl = true if http.respond_to?(:use_ssl) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
 
@@ -74,25 +81,19 @@ module Dagger
     end
 
     def get(uri, opts = {})
+      uri = Utils.resolve_uri(uri, @host, opts[:query])
+
       opts[:follow] = 10 if opts[:follow] == true
-
-      uri = Utils.parse_uri(@host + uri)
-      # path = uri[0] == '/' ? uri : Utils.parse_uri(uri).request_uri
-      uri.path.sub!(/\?.*|$/, '?' + Utils.encode(opts[:query])) if opts[:query] and opts[:query].any?
-
       headers = opts[:headers] || {}
       headers['Accept'] = 'application/json' if opts[:json]
-
-      puts uri.path
 
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
 
-      if @http.is_a?(Net::HTTP)
-        @http.start if @http.is_a?(Net::HTTP) and !@http.started?
+      if @http.respond_to?(:started?) # regular Net::HTTP 
+        @http.start unless @http.started?
         resp, data = @http.request(request)
-      else
-        # puts uri.inspect
+      else # persistent
         resp, data = @http.request(uri, request)
       end
 
@@ -138,7 +139,7 @@ module Dagger
         return get(uri, opts.merge(query: query))
       end
 
-      uri     = Utils.parse_uri(@host + uri)
+      uri = Utils.resolve_uri(uri, @host)
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
 
       query = if data.is_a?(String)
@@ -152,16 +153,16 @@ module Dagger
 
       if opts[:username] # opts[:password] is optional
         str = [opts[:username], opts[:password]].compact.join(':')
-        headers['Authorization'] = "Basic " + Base64.encode64(str)
+        headers['Authorization'] = 'Basic ' + Base64.encode64(str)
       end
 
-      if @http.respond_to?(:started?)
+      if @http.respond_to?(:started?) # regular Net::HTTP
         args = [method.to_s.downcase, uri.path, query, headers]
         args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
         @http.start unless @http.started?
         resp, data = @http.send(*args)
-      else
+      else # Net::HTTP::Persistent
         req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.path, headers)
         req.set_form_data(query)
 
@@ -174,7 +175,7 @@ module Dagger
       SocketError, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
 
       if method.to_s.downcase != 'get' && retries = opts[:retries] and retries.to_i > 0
-        puts "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        puts "[#{DAGGER_NAME}] Got #{e.class}! Retrying in a sec (#{retries} retries left)"
         sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
         request(method, uri, data, opts.merge(retries: retries - 1))
       else
