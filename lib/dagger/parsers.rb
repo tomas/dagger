@@ -5,12 +5,14 @@ require 'dagger/ox_extension'
 class Parsers
 
   def initialize(response)
-    @body = response.body
-    @normalized = response.content_type.to_s.split(';').first.gsub(/[^a-z]/, '_')
+    if type = response.content_type
+      @normalized_type = response.content_type.split(';').first.gsub(/[^a-z]/, '_')
+      @body = response.body
+    end
   end
 
   def process
-    send(@normalized, @body) if respond_to?(@normalized)
+    send(@normalized_type, @body) if @normalized_type && respond_to?(@normalized_type)
   end
 
   def application_json(body)
