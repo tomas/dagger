@@ -6,7 +6,7 @@ class Parsers
 
   def initialize(response)
     if type = response.content_type
-      @normalized_type = response.content_type.split(';').first.gsub(/[^a-z]/, '_')
+      @normalized_type = type.split(';').first.gsub(/[^a-z]/, '_')
       @body = response.body
     end
   end
