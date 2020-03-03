@@ -20,6 +20,26 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
     found.empty? ? nil : found.size == 1 ? found.first : found
   end
 
+  def slice(*arr)
+    Array(arr).flatten.map { |key| self[key] }
+  end
+
+  def values(arr = nil, include_empty: false)
+    if arr
+      Array(arr).flatten.each_with_object({}) do |key, memo| 
+        if found = self[key] and (found.to_s || include_empty)
+          memo[key] = found.to_s
+        end
+      end
+    else
+      children.each_with_object({}) do |child, memo| 
+        if child.to_s || include_empty
+          memo[child.name] = child.to_s
+        end
+      end
+    end
+  end
+
   def dig(*paths)
     list = Array(paths).flatten
     res = list.reduce([self]) do |parents, key|
