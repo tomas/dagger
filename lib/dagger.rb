@@ -173,8 +173,8 @@ module Dagger
         resp, data = @http.send(*args)
       else # Net::HTTP::Persistent
         req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.path, headers)
-        req.set_form_data(query)
-
+        # req.set_form_data(query)
+        req.body = query
         resp, data = @http.request(uri, req)
       end
 
