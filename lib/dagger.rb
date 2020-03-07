@@ -93,7 +93,7 @@ module Dagger
 
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
-      headers['Accept'] = 'application/json' if opts[:json]
+      headers['Accept'] = 'application/json' if opts[:json] && headers['Accept'].nil?
 
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
@@ -154,7 +154,8 @@ module Dagger
       query = if data.is_a?(String)
         data
       elsif opts[:json]
-        headers['Accept'] = headers['Content-Type'] = 'application/json'
+        headers['Content-Type'] = 'application/json'
+        headers['Accept'] = 'application/json' if headers['Accept'].nil?
         Oj.dump(data, mode: :compat) # compat ensures symbols are converted to strings
       else # querystring, then
         Utils.encode(data)
