@@ -65,7 +65,8 @@ module Dagger
     def self.init(uri, opts)
       uri  = Utils.parse_uri(uri)
       http = if opts.delete(:persistent)
-        Net::HTTP::Persistent.new(name: DAGGER_NAME)
+        pool_size = opts[:pool_size] || Net::HTTP::Persistent::DEFAULT_POOL_SIZE
+        Net::HTTP::Persistent.new(name: DAGGER_NAME, pool_size: pool_size)
       else
         Net::HTTP.new(opts[:ip] || uri.host, uri.port)
       end
@@ -89,6 +90,7 @@ module Dagger
 
     def get(uri, opts = {})
       uri = Utils.resolve_uri(uri, @host, opts[:query])
+
       raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}") if @host != uri.scheme_and_host
 
       opts[:follow] = 10 if opts[:follow] == true
@@ -107,6 +109,7 @@ module Dagger
         @http.start unless @http.started?
         resp, data = @http.request(request)
       else # persistent
+        puts @http.pool.inspect
         resp, data = @http.request(uri, request)
       end
 
