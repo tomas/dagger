@@ -67,7 +67,7 @@ module Dagger
       http = if opts.delete(:persistent)
         Net::HTTP::Persistent.new(name: DAGGER_NAME)
       else
-        Net::HTTP.new(uri.host, uri.port)
+        Net::HTTP.new(opts[:ip] || uri.host, uri.port)
       end
 
       if uri.port == 443
@@ -94,6 +94,11 @@ module Dagger
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
       headers['Accept'] = 'application/json' if opts[:json] && headers['Accept'].nil?
+
+      if opts[:ip]
+        headers['Host'] = uri.host
+        uri = opts[:ip]
+      end
 
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
