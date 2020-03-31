@@ -11,7 +11,7 @@ describe 'IP Connection' do
     end.to raise_error(SocketError, /getaddrinfo/)
 
     resp = Dagger.get('http://www.awiefjoawijfaowef.com', { ip: '1.1.1.1'} )
-    expect(resp.status).to eq(404)
+    expect(resp.body).to match('<center>cloudflare</center>')
   end
 
 end
