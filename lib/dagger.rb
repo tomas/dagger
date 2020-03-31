@@ -190,7 +190,7 @@ module Dagger
       @response = build_response(resp, data || resp.body)
 
     rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
-      SocketError, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
+      SocketError, EOFError, Net::ReadTimeout, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
 
       if method.to_s.downcase != 'get' && retries = opts[:retries] and retries.to_i > 0
         puts "[#{DAGGER_NAME}] Got #{e.class}! Retrying in a sec (#{retries} retries left)"
