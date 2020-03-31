@@ -109,13 +109,12 @@ module Dagger
         @http.start unless @http.started?
         resp, data = @http.request(request)
       else # persistent
-        puts @http.pool.inspect
         resp, data = @http.request(uri, request)
       end
 
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
         opts[:follow] -= 1
-        puts "Following redirect to #{resp['Location']}"
+        debug "Following redirect to #{resp['Location']}"
         return get(resp['Location'], opts)
       end
 
@@ -125,7 +124,7 @@ module Dagger
       SocketError, EOFError, Net::ReadTimeout, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
 
       if retries = opts[:retries] and retries.to_i > 0
-        puts "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        debug "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
         sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
         get(uri, opts.merge(retries: retries - 1))
       else
@@ -194,7 +193,7 @@ module Dagger
       SocketError, EOFError, OpenSSL::SSL::SSLError => e
 
       if method.to_s.downcase != 'get' && retries = opts[:retries] and retries.to_i > 0
-        puts "[#{DAGGER_NAME}] Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        debug "[#{DAGGER_NAME}] Got #{e.class}! Retrying in a sec (#{retries} retries left)"
         sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
         request(method, uri, data, opts.merge(retries: retries - 1))
       else
@@ -225,6 +224,10 @@ module Dagger
     end
 
     private
+
+    def debug(str)
+      puts str if ENV['DEBUGGING']
+    end
 
     def build_response(resp, body)
       resp.extend(Response)
