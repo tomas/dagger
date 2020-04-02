@@ -14,6 +14,9 @@ describe 'Parsers' do
 
   before do
     allow(Net::HTTP).to receive(:new).and_return(fake_http)
+    allow(fake_http).to receive(:keep_alive_timeout=).and_return(true)
+    allow(fake_http).to receive(:read_timeout=).and_return(true)
+    allow(fake_http).to receive(:open_timeout=).and_return(true)
     allow(fake_http).to receive(:verify_mode=).and_return(true)
     allow(fake_http).to receive(:post).and_return(fake_resp)
   end
