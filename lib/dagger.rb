@@ -50,7 +50,7 @@ module Dagger
       when Array then obj.map { |v| encode(v, "#{key}[]") }.join('&')
       when nil   then ''
       else
-        "#{key}=#{URI.escape(obj.to_s)}"
+        "#{key}=#{ERB::Util.url_encode(obj.to_s)}"
       end
     end
 
