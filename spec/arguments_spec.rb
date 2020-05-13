@@ -23,7 +23,7 @@ describe 'arguments' do
     describe 'invalid URL' do
 
       it 'raises error' do
-        expect { send_request('asd123.rewqw') }.to raise_error(ArgumentError)
+        expect { send_request('asd123.rewqw') }.to raise_error(SocketError)
       end
 
     end
@@ -35,6 +35,15 @@ describe 'arguments' do
       end
 
     end
+
+    describe 'host without protocol' do
+
+      it 'works' do
+        expect(send_request('www.google.com')).to be_a(Net::HTTPResponse)
+      end
+
+    end
+
 
     describe 'valid host' do
 

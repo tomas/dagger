@@ -34,7 +34,6 @@ module Dagger
     end
 
     def self.resolve_uri(uri, host = nil, query = nil)
-      uri = host + uri if uri.to_s['//'].nil? && host
       uri = parse_uri(uri.to_s)
       uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
       uri
@@ -90,8 +89,9 @@ module Dagger
 
     def get(uri, opts = {})
       uri = Utils.resolve_uri(uri, @host, opts[:query])
-
-      raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}") if @host != uri.scheme_and_host
+      if @host != uri.scheme_and_host
+        raise ArgumentError.new("#{uri.scheme_and_host} doesn't match #{@host}")
+      end
 
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
@@ -155,9 +155,11 @@ module Dagger
       end
 
       uri = Utils.resolve_uri(uri, @host)
-      raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}") if @host != uri.scheme_and_host
-      headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
+      if @host != uri.scheme_and_host
+        raise ArgumentError.new("#{uri.scheme_and_host} doesn't match #{@host}")
+      end
 
+      headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
       query = if data.is_a?(String)
         data
       elsif opts[:json]
