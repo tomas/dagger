@@ -18,7 +18,7 @@ module Dagger
   DEFAULT_RETRY_WAIT = 5.freeze # seconds
   DEFAULT_HEADERS = {
     'Accept'     => '*/*',
-    'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP Wrapper, like curl)"
+    'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP wrapper, like curl)"
   }
 
   DEFAULTS = {
