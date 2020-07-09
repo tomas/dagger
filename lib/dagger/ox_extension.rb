@@ -5,6 +5,10 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
   alias_method :to_s, :text
   alias_method :value, :text
 
+  def to_node
+    self
+  end
+
   def count
     raise "Please call #children.count"
   end
@@ -86,14 +90,14 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
 end
 
 class Ox::Document
-  def to_hash
-    nodes.first.to_hash
+  def to_node
+    nodes.first.to_node
   end
 end
 
 class Ox::Element
-  def to_hash
-    children = nodes.map { |n| n.class == self.class ? n.to_hash : nil }.compact
+  def to_node
+    children = nodes.map { |n| n.class == self.class ? n.to_node : nil }.compact
     XMLNode.new(value, text, attributes, children)
   end
 end
