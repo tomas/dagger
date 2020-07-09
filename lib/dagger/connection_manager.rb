@@ -44,7 +44,13 @@ module Dagger
     def send_request(uri, request)
       connection = connection_for(uri)
       @mutex.synchronize do
-        connection.request(request)
+        begin
+          connection.request(request)
+        rescue StandardError => err
+          err
+        end
+      end.tap do |result|
+        raise(result) if result.is_a?(StandardError)
       end
     end
 
