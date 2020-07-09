@@ -9,8 +9,12 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
     raise "Please call #children.count"
   end
 
-  def to_hash
-    self # for backwards compat
+  def keys
+    @keys ||= children.collect(&:name)
+  end
+
+  def is_array?
+    keys.count != keys.uniq.count
   end
 
   # this lets us traverse an parsed object like this:
@@ -20,30 +24,33 @@ XMLNode = Struct.new(:name, :text, :attributes, :children) do
     found.empty? ? nil : found.size == 1 ? found.first : found
   end
 
+  # returns list of XMLNodes with matching names
   def slice(*arr)
     Array(arr).flatten.map { |key| self[key] }
   end
 
-  def values(arr = nil, include_empty: false)
-    if arr
-      Array(arr).flatten.each_with_object({}) do |key, memo| 
+  def values(keys_arr = nil, include_empty: false)
+    if keys_arr
+      Array(keys_arr).flatten.each_with_object({}) do |key, memo|
         if found = self[key] and (found.to_s || include_empty)
           memo[key] = found.to_s
         end
       end
+    elsif is_array?
+      children.map(&:values)
     else
-      children.each_with_object({}) do |child, memo| 
-        if child.to_s || include_empty
-          memo[child.name] = child.to_s
-        end
+      children.each_with_object({}) do |child, memo|
+        memo[child.name] = child.children.any? ? child.values : child.text
       end
     end
   end
 
+  alias_method :to_hash, :values
+  alias_method :to_h, :values
+
   def dig(*paths)
     list = Array(paths).flatten
     res = list.reduce([self]) do |parents, key|
-
       if parents
         found = parents.map do |parent|
           parent.children.select { |node| node.name.to_s == key.to_s }
