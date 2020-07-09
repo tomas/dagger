@@ -26,7 +26,7 @@ class Parsers
 
   def text_xml(body)
     if res = Ox.parse(body)
-      res.to_hash
+      res.to_node
     end
   rescue Ox::ParseError
     nil
