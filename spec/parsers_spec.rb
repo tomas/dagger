@@ -103,7 +103,7 @@ describe 'Parsers' do
       it 'returns XMLNode obj' do
         res = send_request.data
         expect(res).to be_a(XMLNode)
-        expect(res.to_hash).to eql(res)
+        expect(res.to_node).to eql(res)
         expect(res['foo']).to be_a(XMLNode)
         expect(res['foo'].text).to eql('123')
 
@@ -129,7 +129,7 @@ describe 'Parsers' do
 
       it 'works' do
         doc = Ox.parse(xml)
-        obj = doc.to_hash
+        obj = doc.to_node
 
         expect(obj[:nested][:item][:title].text).to eql('foobar')
       end
