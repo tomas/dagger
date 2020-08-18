@@ -1,8 +1,7 @@
 require 'dagger/version'
 require 'dagger/response'
 require 'dagger/parsers'
-
-require 'net/http/persistent'
+require 'dagger/connection_manager'
 require 'net/https'
 require 'base64'
 
@@ -19,7 +18,13 @@ module Dagger
   DEFAULT_RETRY_WAIT = 5.freeze # seconds
   DEFAULT_HEADERS = {
     'Accept'     => '*/*',
-    'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP Wrapper, like curl)"
+    'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP wrapper, like curl)"
+  }
+
+  DEFAULTS = {
+    open_timeout: 10,
+    read_timeout: 10,
+    keep_alive_timeout: 10
   }
 
   module Utils
@@ -34,6 +39,7 @@ module Dagger
     end
 
     def self.resolve_uri(uri, host = nil, query = nil)
+      uri = host + uri if uri.to_s['//'].nil? && host
       uri = parse_uri(uri.to_s)
       uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
       uri
@@ -61,25 +67,40 @@ module Dagger
 
   class Client
 
-    def self.init(uri, opts)
-      uri  = Utils.parse_uri(uri)
-      http = if opts.delete(:persistent)
-        pool_size = opts[:pool_size] || Net::HTTP::Persistent::DEFAULT_POOL_SIZE
-        Net::HTTP::Persistent.new(name: DAGGER_NAME, pool_size: pool_size)
-      else
-        Net::HTTP.new(opts[:ip] || uri.host, uri.port)
+    def self.init_persistent(opts = {})
+      # this line below forces one connection manager between multiple threads
+      # @persistent ||= Dagger::ConnectionManager.new(opts)
+
+      # here we initialize a connection manager for each thread
+      Thread.current[:dagger_persistent] ||= begin
+        Dagger::ConnectionManager.new(opts)
       end
+    end
+
+    def self.init_connection(uri, opts = {})
+      http = Net::HTTP.new(opts[:ip] || uri.host, uri.port)
 
       if uri.port == 443
         http.use_ssl = true if http.respond_to?(:use_ssl=) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
 
-      [:open_timeout, :read_timeout, :ssl_version, :ciphers].each do |key|
-        http.send("#{key}=", opts[key]) if opts.has_key?(key)
+      [:keep_alive_timeout, :open_timeout, :read_timeout, :ssl_version, :ciphers].each do |key|
+        http.send("#{key}=", opts[key] || DEFAULTS[key]) if (opts.has_key?(key) || DEFAULTS.has_key?(key))
       end
 
-      # new(http, [uri.scheme, uri.host].join('://'))
+      http
+    end
+
+    def self.init(uri, opts)
+      uri  = Utils.parse_uri(uri)
+
+      http = if opts.delete(:persistent)
+        init_persistent(opts)
+      else
+        init_connection(uri, opts)
+      end
+
       new(http, uri.scheme_and_host)
     end
 
@@ -89,8 +110,9 @@ module Dagger
 
     def get(uri, opts = {})
       uri = Utils.resolve_uri(uri, @host, opts[:query])
+
       if @host != uri.scheme_and_host
-        raise ArgumentError.new("#{uri.scheme_and_host} doesn't match #{@host}")
+        raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}")
       end
 
       opts[:follow] = 10 if opts[:follow] == true
@@ -109,7 +131,7 @@ module Dagger
         @http.start unless @http.started?
         resp, data = @http.request(request)
       else # persistent
-        resp, data = @http.request(uri, request)
+        resp, data = @http.send_request(uri, request)
       end
 
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
@@ -121,7 +143,8 @@ module Dagger
       @response = build_response(resp, data || resp.body)
 
     rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
-      SocketError, EOFError, Net::ReadTimeout, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
+      Net::OpenTimeout, Net::ReadTimeout, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, \
+      SocketError, EOFError, OpenSSL::SSL::SSLError => e
 
       if retries = opts[:retries] and retries.to_i > 0
         debug "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
@@ -156,10 +179,11 @@ module Dagger
 
       uri = Utils.resolve_uri(uri, @host)
       if @host != uri.scheme_and_host
-        raise ArgumentError.new("#{uri.scheme_and_host} doesn't match #{@host}")
+        raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}")
       end
 
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
+
       query = if data.is_a?(String)
         data
       elsif opts[:json]
@@ -185,7 +209,7 @@ module Dagger
         req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.path, headers)
         # req.set_form_data(query)
         req.body = query
-        resp, data = @http.request(uri, req)
+        resp, data = @http.send_request(uri, req)
       end
 
       @response = build_response(resp, data || resp.body)
@@ -208,7 +232,7 @@ module Dagger
     end
 
     def open(&block)
-      if @http.is_a?(Net::HTTP::Persistent)
+      if @http.is_a?(Dagger::ConnectionManager)
         instance_eval(&block)
       else
         @http.start do
@@ -218,7 +242,7 @@ module Dagger
     end
 
     def close
-      if @http.is_a?(Net::HTTP::Persistent)
+      if @http.is_a?(Dagger::ConnectionManager)
         @http.shutdown # calls finish on pool connections
       else
         @http.finish if @http.started?
