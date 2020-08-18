@@ -39,7 +39,7 @@ module Dagger
     end
 
     def self.resolve_uri(uri, host = nil, query = nil)
-      uri = host + uri if uri.to_s['//'].nil? && host
+      uri = host + uri if uri[0] == '/' && host
       uri = parse_uri(uri.to_s)
       uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
       uri
