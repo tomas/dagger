@@ -14,19 +14,19 @@ end
 
 module Dagger
 
-  DAGGER_NAME     = "Dagger/#{VERSION}"
+  DAGGER_NAME     = "Dagger/#{VERSION}".freeze
   REDIRECT_CODES  = [301, 302, 303].freeze
   DEFAULT_RETRY_WAIT = 5.freeze # seconds
   DEFAULT_HEADERS = {
     'Accept'     => '*/*',
     'User-Agent' => "#{DAGGER_NAME} (Ruby Net::HTTP wrapper, like curl)"
-  }
+  }.freeze
 
   DEFAULTS = {
     open_timeout: 10,
     read_timeout: 10,
     keep_alive_timeout: 10
-  }
+  }.freeze
 
   module Utils
 
