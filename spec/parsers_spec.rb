@@ -122,16 +122,30 @@ describe 'Parsers' do
           <nested>
             <item>
               <title attr="downcased">foobar</title>
+              <category>cat</category>
+              <published>true</published>
             </item>
           </nested>
         </xml>
       )
 
-      it 'works' do
-        doc = Ox.parse(xml)
-        obj = doc.to_node
+      describe '#to_node' do
+        it 'works as expected' do
+          doc = Ox.parse(xml)
+          obj = doc.to_node
+          expect(obj[:nested][:item][:title].text).to eql('foobar')
+        end
+      end
 
-        expect(obj[:nested][:item][:title].text).to eql('foobar')
+      describe '#values' do
+        it 'works as expected' do
+          doc = Ox.parse(xml)
+          obj = doc.to_node.values
+          expect(obj).to eql({
+            "foo" => "test",
+            "nested" => {"item"=>{"category"=>"cat", "published"=>"true", "title"=>"foobar"}},
+          })
+        end
       end
 
     end
