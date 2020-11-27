@@ -4,6 +4,7 @@ require 'dagger/parsers'
 require 'dagger/connection_manager'
 require 'net/https'
 require 'base64'
+require 'erb'
 
 class URI::HTTP
   def scheme_and_host
