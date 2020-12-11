@@ -1,6 +1,6 @@
 module Dagger
   MAJOR = 1
-  MINOR = 8
+  MINOR = 9
   PATCH = 0
 
   VERSION = [MAJOR, MINOR, PATCH].join('.')
