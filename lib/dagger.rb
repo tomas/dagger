@@ -137,7 +137,7 @@ module Dagger
 
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
         opts[:follow] -= 1
-        debug "Following redirect to #{resp['Location']}"
+        debug { "Following redirect to #{resp['Location']}" }
         return get(resp['Location'], opts)
       end
 
@@ -148,7 +148,7 @@ module Dagger
       SocketError, EOFError, OpenSSL::SSL::SSLError => e
 
       if retries = opts[:retries] and retries.to_i > 0
-        debug "Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        debug { "Got #{e.class}! Retrying in a sec (#{retries} retries left)" }
         sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
         get(uri, opts.merge(retries: retries - 1))
       else
@@ -200,6 +200,9 @@ module Dagger
         headers['Authorization'] = 'Basic ' + Base64.encode64(str)
       end
 
+      start = Time.now
+      debug { "Sending request to #{uri.inspect} with headers #{headers.inspect}" }
+
       if @http.respond_to?(:started?) # regular Net::HTTP
         args = [method.to_s.downcase, uri.path, query, headers]
         args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
@@ -213,6 +216,7 @@ module Dagger
         resp, data = @http.send_request(uri, req)
       end
 
+      debug { "Got response #{resp.status}: #{data || resp.body} (#{(Time.now - start).round(2)}s)" }
       @response = build_response(resp, data || resp.body)
 
     rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
@@ -220,7 +224,7 @@ module Dagger
       SocketError, EOFError, OpenSSL::SSL::SSLError => e
 
       if method.to_s.downcase != 'get' && retries = opts[:retries] and retries.to_i > 0
-        debug "[#{DAGGER_NAME}] Got #{e.class}! Retrying in a sec (#{retries} retries left)"
+        debug { "Got #{e.class}! Retrying in a sec (#{retries} retries left)" }
         sleep (opts[:retry_wait] || DEFAULT_RETRY_WAIT)
         request(method, uri, data, opts.merge(retries: retries - 1))
       else
@@ -252,8 +256,15 @@ module Dagger
 
     private
 
-    def debug(str)
-      puts str if ENV['DEBUGGING']
+    def debug(&block)
+      if ENV['DEBUGGING'] || ENV['DEBUG']
+        str = yield
+        logger.info "[#{DAGGER_NAME}] #{str}"
+      end
+    end
+
+    def logger
+      @logger ||= Logger.new(@logfile || STDOUT)
     end
 
     def build_response(resp, body)
