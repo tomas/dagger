@@ -201,7 +201,7 @@ module Dagger
       end
 
       start = Time.now
-      debug { "Sending request to #{uri.inspect} with headers #{headers.inspect}" }
+      debug { "Sending #{method} request to #{uri} with headers #{headers.inspect}" }
 
       if @http.respond_to?(:started?) # regular Net::HTTP
         args = [method.to_s.downcase, uri.path, query, headers]
@@ -216,7 +216,7 @@ module Dagger
         resp, data = @http.send_request(uri, req)
       end
 
-      debug { "Got response #{resp.status}: #{data || resp.body} (#{(Time.now - start).round(2)}s)" }
+      debug { "Got response #{resp.code} in #{(Time.now - start).round(2)}s: #{data || resp.body}" }
       @response = build_response(resp, data || resp.body)
 
     rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EINVAL, Timeout::Error, \
@@ -264,6 +264,7 @@ module Dagger
     end
 
     def logger
+      require 'logger'
       @logger ||= Logger.new(@logfile || STDOUT)
     end
 
