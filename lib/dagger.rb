@@ -201,16 +201,16 @@ module Dagger
       end
 
       start = Time.now
-      debug { "Sending #{method} request to #{uri} with headers #{headers.inspect}" }
+      debug { "Sending #{method} request to #{uri.request_uri} with headers #{headers.inspect} -- #{query}" }
 
       if @http.respond_to?(:started?) # regular Net::HTTP
-        args = [method.to_s.downcase, uri.path, query, headers]
+        args = [method.to_s.downcase, uri.request_uri, query, headers]
         args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
         @http.start unless @http.started?
         resp, data = @http.send(*args)
       else # Net::HTTP::Persistent
-        req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.path, headers)
+        req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.request_uri, headers)
         # req.set_form_data(query)
         req.body = query
         resp, data = @http.send_request(uri, req)
