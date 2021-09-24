@@ -6,24 +6,27 @@ require 'rspec/expectations'
 describe 'Persistent mode' do
 
   it 'works' do
-    fake_client = double('Client')
-    expect(Dagger::Client).to receive(:new).once.and_return(fake_client)
-    expect(fake_client).to receive(:open).once #.and_return(fake_resp)
-    expect(fake_client).to receive(:close).once #.and_return(fake_resp)
+    # fake_client = double('Client')
+    # expect(Dagger::Client).to receive(:new).once.and_return(fake_client)
+    # expect(fake_client).to receive(:open).once #.and_return(fake_resp)
+    # expect(fake_client).to receive(:close).once #.and_return(fake_resp)
 
+    res1, res2 = nil, nil
     obj = Dagger.open('https://www.google.com') do
-      get('/search?q=dagger+http+client')
-      get('google.com/search?q=thank+you+ruby')
+      res1 = get('/search?q=dagger+http+client', { body: 'foo' })
+      res2 = get('https://www.google.com/search?q=thank+you+ruby')
+      res3 = post('https://www.google.com/search?q=foobar', { foo: 'bar' })
     end
+
+    expect(res1.code).to eq(400)
+    expect(res2.code).to eq(200)
+    expect(res2.code).to eq(200)
+    expect(obj).to be_a(Dagger::Client)
   end
 
 end
 
 describe 'using threads' do
-
-  def get(url)
-    @http.get(url)
-  end
 
   def connect(host)
     raise if @http
@@ -49,7 +52,7 @@ describe 'using threads' do
         # mutex.synchronize { Dagger.open(host) }
         http = Dagger.open(host)
         while url = mutex.synchronize { urls.pop }
-          puts "Fetching #{url}"
+          # puts "Fetching #{url}"
           resp = http.get(url)
           mutex.synchronize do
             result.push(resp.code)

@@ -42,18 +42,28 @@ module Dagger
     def self.resolve_uri(uri, host = nil, query = nil)
       uri = host + uri if uri[0] == '/' && host
       uri = parse_uri(uri.to_s)
-      uri.path.sub!(/\?.*|$/, '?' + Utils.encode(query)) if query and query.any?
+      uri.path.sub!(/\?.*|$/, '?' + to_query_string(query)) if query and query.any?
       uri
     end
 
-    def self.encode(obj, key = nil)
+    def self.encode_body(obj, opts = {})
+      if obj.is_a?(String)
+        obj
+      elsif opts[:json]
+        Oj.dump(obj, mode: :compat) # compat ensures symbols are converted to strings
+      else
+        to_query_string(obj)
+      end
+    end
+
+    def self.to_query_string(obj, key = nil)
       if key.nil? && obj.is_a?(String) # && obj['=']
         return obj
       end
 
       case obj
-      when Hash  then obj.map { |k, v| encode(v, append_key(key,k)) }.join('&')
-      when Array then obj.map { |v| encode(v, "#{key}[]") }.join('&')
+      when Hash  then obj.map { |k, v| to_query_string(v, append_key(key, k)) }.join('&')
+      when Array then obj.map { |v| to_query_string(v, "#{key}[]") }.join('&')
       when nil   then ''
       else
         "#{key}=#{ERB::Util.url_encode(obj.to_s)}"
@@ -119,6 +129,7 @@ module Dagger
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
       headers['Accept'] = 'application/json' if opts[:json] && headers['Accept'].nil?
+      headers['Content-Type'] = 'application/json' if opts[:json] && opts[:body]
 
       if opts[:ip]
         headers['Host'] = uri.host
@@ -127,6 +138,7 @@ module Dagger
 
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
+      request.body = Utils.encode_body(opts[:body], opts) if opts[:body]
 
       if @http.respond_to?(:started?) # regular Net::HTTP
         @http.start unless @http.started?
@@ -174,45 +186,40 @@ module Dagger
 
     def request(method, uri, data, opts = {})
       if method.to_s.downcase == 'get'
-        query = (opts[:query] || {}).merge(data || {})
-        return get(uri, opts.merge(query: query))
+        data ||= opts[:body]
+        return get(uri, opts.merge(body: data))
       end
 
-      uri = Utils.resolve_uri(uri, @host)
+      uri = Utils.resolve_uri(uri, @host, opts[:query])
       if @host != uri.scheme_and_host
         raise ArgumentError.new("#{uri.scheme_and_host} does not match #{@host}")
       end
 
       headers = DEFAULT_HEADERS.merge(opts[:headers] || {})
-
-      query = if data.is_a?(String)
-        data
-      elsif opts[:json]
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json' if headers['Accept'].nil?
-        Oj.dump(data, mode: :compat) # compat ensures symbols are converted to strings
-      else # querystring, then
-        Utils.encode(data)
-      end
+      body = Utils.encode_body(data, opts)
 
       if opts[:username] # opts[:password] is optional
         str = [opts[:username], opts[:password]].compact.join(':')
         headers['Authorization'] = 'Basic ' + Base64.encode64(str)
       end
 
+      if opts[:json]
+        headers['Content-Type'] = 'application/json'
+        headers['Accept'] = 'application/json' if headers['Accept'].nil?
+      end
+
       start = Time.now
       debug { "Sending #{method} request to #{uri.request_uri} with headers #{headers.inspect} -- #{query}" }
 
       if @http.respond_to?(:started?) # regular Net::HTTP
-        args = [method.to_s.downcase, uri.request_uri, query, headers]
+        args = [method.to_s.downcase, uri.request_uri, body, headers]
         args.delete_at(2) if args[0] == 'delete' # Net::HTTP's delete does not accept data
 
         @http.start unless @http.started?
         resp, data = @http.send(*args)
       else # Net::HTTP::Persistent
         req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.request_uri, headers)
-        # req.set_form_data(query)
-        req.body = query
+        req.body = body
         resp, data = @http.send_request(uri, req)
       end
 
