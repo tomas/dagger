@@ -3,7 +3,7 @@ module Dagger
   class ConnectionManager
 
     def initialize(opts = {})
-      @opts = {}
+      @opts = opts
       @active_connections = {}
       @mutex = Mutex.new
     end
