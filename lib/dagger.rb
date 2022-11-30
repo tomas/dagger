@@ -91,7 +91,7 @@ module Dagger
     def self.init_connection(uri, opts = {})
       http = Net::HTTP.new(opts[:ip] || uri.host, uri.port)
 
-      if uri.port == 443
+      if uri.port == 443 || uri.scheme == 'https'
         http.use_ssl = true if http.respond_to?(:use_ssl=) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
