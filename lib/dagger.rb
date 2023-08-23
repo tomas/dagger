@@ -47,6 +47,7 @@ module Dagger
     end
 
     def self.encode_body(obj, opts = {})
+      return if obj.nil? || obj.empty?
       if obj.is_a?(String)
         obj
       elsif opts[:json]
@@ -129,7 +130,7 @@ module Dagger
       opts[:follow] = 10 if opts[:follow] == true
       headers = opts[:headers] || {}
       headers['Accept'] = 'application/json' if opts[:json] && headers['Accept'].nil?
-      headers['Content-Type'] = 'application/json' if opts[:json] && opts[:body]
+      headers['Content-Type'] = 'application/json' if opts[:json] && opts[:body] && opts[:body].size > 0
 
       if opts[:ip]
         headers['Host'] = uri.host
@@ -138,7 +139,7 @@ module Dagger
 
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
-      request.body = Utils.encode_body(opts[:body], opts) if opts[:body]
+      request.body = Utils.encode_body(opts[:body], opts) if opts[:body] && opts[:body].size > 0
 
       if @http.respond_to?(:started?) # regular Net::HTTP
         @http.start unless @http.started?
