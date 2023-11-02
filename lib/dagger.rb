@@ -137,6 +137,8 @@ module Dagger
         uri = opts[:ip]
       end
 
+      debug { "Sending GET request to #{uri.request_uri} with headers #{headers.inspect} -- #{opts[:body]}" }
+
       request = Net::HTTP::Get.new(uri, DEFAULT_HEADERS.merge(headers))
       request.basic_auth(opts.delete(:username), opts.delete(:password)) if opts[:username]
       request.body = Utils.encode_body(opts[:body], opts) if opts[:body] && opts[:body].size > 0
@@ -210,7 +212,7 @@ module Dagger
       end
 
       start = Time.now
-      debug { "Sending #{method} request to #{uri.request_uri} with headers #{headers.inspect} -- #{query}" }
+      debug { "Sending #{method} request to #{uri.request_uri} with headers #{headers.inspect} -- #{data}" }
 
       if @http.respond_to?(:started?) # regular Net::HTTP
         args = [method.to_s.downcase, uri.request_uri, body, headers]
