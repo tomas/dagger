@@ -41,7 +41,7 @@ module Dagger
 
     # Executes an HTTP request to the given URI with the given method. Also
     # allows a request body, headers, and query string to be specified.
-    def send_request(uri, request)
+    def request(uri, request)
       connection = connection_for(uri)
       @mutex.synchronize do
         begin

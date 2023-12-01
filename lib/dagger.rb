@@ -147,7 +147,7 @@ module Dagger
         @http.start unless @http.started?
         resp, data = @http.request(request)
       else # persistent
-        resp, data = @http.send_request(uri, request)
+        resp, data = @http.request(uri, request)
       end
 
       if REDIRECT_CODES.include?(resp.code.to_i) && resp['Location'] && (opts[:follow] && opts[:follow] > 0)
@@ -223,7 +223,7 @@ module Dagger
       else # Net::HTTP::Persistent
         req = Kernel.const_get("Net::HTTP::#{method.capitalize}").new(uri.request_uri, headers)
         req.body = body
-        resp, data = @http.send_request(uri, req)
+        resp, data = @http.request(uri, req)
       end
 
       debug { "Got response #{resp.code} in #{(Time.now - start).round(2)}s: #{data || resp.body}" }
