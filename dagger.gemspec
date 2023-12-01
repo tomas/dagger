@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rspec-mocks"
   s.add_development_dependency "rspec-expectations"
 
+  s.add_runtime_dependency "net-http-persistent", ">= 3.0"
   s.add_runtime_dependency "oj", ">= 2.1"
   s.add_runtime_dependency "ox", ">= 2.4"
 

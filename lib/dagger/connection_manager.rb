@@ -1,3 +1,5 @@
+# unused (we're using Net::HTTP::Persistent again)
+
 module Dagger
 
   class ConnectionManager

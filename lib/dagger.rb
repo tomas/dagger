@@ -1,7 +1,8 @@
 require 'dagger/version'
 require 'dagger/response'
 require 'dagger/parsers'
-require 'dagger/connection_manager'
+require 'net/http/persistent'
+# require 'dagger/connection_manager' # unused
 require 'net/https'
 require 'base64'
 require 'erb'
@@ -79,25 +80,20 @@ module Dagger
 
   class Client
 
-    def self.init_persistent(opts = {})
-      # this line below forces one connection manager between multiple threads
-      # @persistent ||= Dagger::ConnectionManager.new(opts)
-
-      # here we initialize a connection manager for each thread
-      Thread.current[:dagger_persistent] ||= begin
-        Dagger::ConnectionManager.new(opts)
-      end
-    end
-
     def self.init_connection(uri, opts = {})
-      http = Net::HTTP.new(opts[:ip] || uri.host, uri.port)
+      http = if opts.delete(:persistent)
+        pool_size = opts[:pool_size] || Net::HTTP::Persistent::DEFAULT_POOL_SIZE
+        Net::HTTP::Persistent.new(name: DAGGER_NAME, pool_size: pool_size)
+      else
+        Net::HTTP.new(opts[:ip] || uri.host, uri.port)
+      end
 
       if uri.port == 443 || uri.scheme == 'https'
         http.use_ssl = true if http.respond_to?(:use_ssl=) # persistent does it automatically
         http.verify_mode = opts[:verify_ssl] === false ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
       end
 
-      [:keep_alive_timeout, :open_timeout, :read_timeout, :ssl_version, :ciphers].each do |key|
+      [:open_timeout, :read_timeout, :ssl_version, :ciphers].each do |key|
         http.send("#{key}=", opts[key] || DEFAULTS[key]) if (opts.has_key?(key) || DEFAULTS.has_key?(key))
       end
 
@@ -106,12 +102,7 @@ module Dagger
 
     def self.init(uri, opts)
       uri  = Utils.parse_uri(uri)
-
-      http = if opts.delete(:persistent)
-        init_persistent(opts)
-      else
-        init_connection(uri, opts)
-      end
+      http = init_connection(uri, opts)
 
       new(http, uri.scheme_and_host)
     end
@@ -247,7 +238,7 @@ module Dagger
     end
 
     def open(&block)
-      if @http.is_a?(Dagger::ConnectionManager)
+      if @http.is_a?(Net::HTTP::Persistent)
         instance_eval(&block)
       else
         @http.start do
@@ -257,7 +248,7 @@ module Dagger
     end
 
     def close
-      if @http.is_a?(Dagger::ConnectionManager)
+      if @http.is_a?(Net::HTTP::Persistent)
         @http.shutdown # calls finish on pool connections
       else
         @http.finish if @http.started?
