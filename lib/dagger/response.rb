@@ -34,7 +34,7 @@ module Dagger
     alias_method :ok?, :success?
 
     def redirect?
-      [301, 302, 303, 307].include?(code)
+      [301, 302, 303, 307, 308].include?(code)
     end
 
     def to_s
