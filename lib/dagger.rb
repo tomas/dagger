@@ -194,7 +194,7 @@ module Dagger
 
       if opts[:username] # opts[:password] is optional
         str = [opts[:username], opts[:password]].compact.join(':')
-        headers['Authorization'] = 'Basic ' + Base64.encode64(str)
+        headers['Authorization'] = 'Basic ' + Base64.strict_encode64(str)
       end
 
       if opts[:json]
